@@ -297,7 +297,7 @@ with hero_r:
 cv_col1, cv_col2 = st.columns([1.2, 2.8], gap="large")
 with cv_col1:
     st.markdown("<div class='card'><b>CV</b><br/>Descarga tu último CV en PDF.</div>", unsafe_allow_html=True)
-    pdf_path = Path("/mnt/data/RenderCV_sb2nov_Theme-2.pdf")
+    pdf_path = Path("assets/RenderCV_sb2nov_Theme-2.pdf")
     if pdf_path.exists():
         pdf_bytes = pdf_path.read_bytes()
         st.download_button("📄 Descargar CV (PDF)", data=pdf_bytes, file_name="Alexander_Rojas_Garay_CV.pdf", mime="application/pdf")
