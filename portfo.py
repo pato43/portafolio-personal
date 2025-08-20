@@ -1,11 +1,9 @@
 # app.py
-# Portafolio Profesional — Dark Edition
+# Portafolio Profesional — Dark Edition (guiado, sin gráfica final, LLM opcional)
 # Autor: (tu nombre)
-# Stack: Streamlit (dark), Altair para gráficos, animación "typing" en insights de proyectos.
 
 import streamlit as st
 import pandas as pd
-import altair as alt
 import time
 from pathlib import Path
 
@@ -69,6 +67,7 @@ header {{ visibility: hidden; }}
   border: 1px solid rgba(255,255,255,.06);
   border-radius: 14px;
   padding: 14px 16px;
+  margin-bottom: 12px;
 }}
 .kpi {{
   background: var(--card);
@@ -105,6 +104,7 @@ hr.section {{
   margin-top:10px; border-left: 3px solid var(--accent);
   padding:10px 12px; background: #0E1A2C; border-radius: 10px;
 }}
+.tip {{ color: var(--muted); font-size:.9rem; margin-top:6px; }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -133,13 +133,12 @@ KPI_CARDS = [
     {"title": "Mejora precisión ML", "value": "+40%"},
 ]
 
-# Proyectos (agrega/edita; image puede ser URL o ruta local)
 PROJECTS = [
     {
         "title": "Agentes ADK + MCP + LLM (Enterprise Ops)",
-        "about": "Entorno de trabajo unificado con agentes ADK, MCPs abiertos y LLM (Gemini) para agenda, inventarios, mensajería y análisis visual en tiempo real.",
-        "impact": "Coordinación cross-funcional en un solo flujo, insights por gráfico y acciones sobre Jira, Slack, WhatsApp y Calendar.",
-        "tech": ["Streamlit", "Plotly/Altair", "Postgres/SQL Server/Spark", "Jira API", "Slack API", "WhatsApp templates"],
+        "about": "Entorno unificado con agentes ADK, MCPs abiertos y LLM (Gemini) para agenda, inventarios, mensajería y análisis visual.",
+        "impact": "Coordinación cross-funcional, insights por gráfico y acciones sobre Jira, Slack, WhatsApp y Calendar.",
+        "tech": ["Streamlit", "Plotly", "Postgres/SQL Server/Spark", "Jira API", "Slack API", "WhatsApp templates"],
         "tags": ["IA Aplicada", "Operaciones", "BI Conversacional"],
         "link": "https://example.com/agentes_adk_mcp_llm",
         "image": ""
@@ -230,9 +229,26 @@ SKILLS = {
     "Integraciones": ["Jira", "Slack", "WhatsApp", "Google Workspace"]
 }
 
+TESTIMONIALS = [
+    "“Enfoque práctico y resultados medibles; la automatización nos ahorró semanas al mes.”",
+    "“Excelente capacidad para traducir objetivos de negocio a soluciones de datos.”",
+    "“Los agentes inteligentes facilitaron la coordinación entre equipos.”"
+]
+
 # =========================
 # UTILIDADES
 # =========================
+def typing(md: str, speed: float = 0.01):
+    """Animación estilo 'typing' para insights LLM simulados."""
+    if not st.session_state.get("show_llm", False):
+        return
+    box = st.empty()
+    acc = ""
+    for ch in md:
+        acc += ch
+        box.markdown(acc, unsafe_allow_html=True)
+        time.sleep(speed)
+
 def safe_image(path_or_url: str, **kwargs):
     if not path_or_url:
         return
@@ -246,20 +262,8 @@ def safe_image(path_or_url: str, **kwargs):
     except Exception:
         pass
 
-def typing(md: str, speed: float = 0.01):
-    """Animación estilo 'typing' para insights. Desactivar en sidebar si se requiere."""
-    if not st.session_state.get("animate_insights", True):
-        st.markdown(md, unsafe_allow_html=True)
-        return
-    box = st.empty()
-    acc = ""
-    for ch in md:
-        acc += ch
-        box.markdown(acc, unsafe_allow_html=True)
-        time.sleep(speed)
-
 # =========================
-# HERO
+# HERO + CV
 # =========================
 hero_l, hero_r = st.columns([2.7, 1.3], gap="large")
 with hero_l:
@@ -285,9 +289,31 @@ with hero_r:
             <a href="{PROFILE['links']['GitHub']}" target="_blank">GitHub</a> •
             <a href="{PROFILE['links']['Portafolio']}" target="_blank">Web</a>
           </div>
+          <div class="tip">Tip: descarga el CV y compártelo al final de reuniones.</div>
         </div>
         """, unsafe_allow_html=True
     )
+
+cv_col1, cv_col2 = st.columns([1.2, 2.8], gap="large")
+with cv_col1:
+    st.markdown("<div class='card'><b>CV</b><br/>Descarga tu último CV en PDF.</div>", unsafe_allow_html=True)
+    pdf_path = Path("/mnt/data/RenderCV_sb2nov_Theme-2.pdf")
+    if pdf_path.exists():
+        pdf_bytes = pdf_path.read_bytes()
+        st.download_button("📄 Descargar CV (PDF)", data=pdf_bytes, file_name="Alexander_Rojas_Garay_CV.pdf", mime="application/pdf")
+    else:
+        cv_url = st.text_input("URL de tu CV (opcional)", value="", help="Si alojas el CV en Drive/GitHub, pega aquí la URL.")
+        if cv_url:
+            st.markdown(f"[Abrir CV en nueva pestaña]({cv_url})")
+
+with cv_col2:
+    with st.expander("💡 Guía rápida (2 min)"):
+        st.markdown("""
+- **Proyectos**: filtra por *tags* o busca por texto; cada tarjeta incluye tecnologías e impacto.
+- **Explicaciones LLM**: pulsa el botón en la barra lateral para **activar** insights simulados (se mostrará texto animado bajo cada proyecto).
+- **Experiencia/Certificaciones/Publicaciones/Habilidades**: navega desde el menú lateral.
+- **Contacto**: formulario y links directos. 
+        """)
 
 st.markdown('<hr class="section"/>', unsafe_allow_html=True)
 
@@ -314,9 +340,19 @@ section = st.sidebar.radio("", ["Proyectos", "Experiencia", "Certificaciones", "
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("### Opciones")
-st.session_state["animate_insights"] = st.sidebar.toggle("Animar insights", value=True)
+if "show_llm" not in st.session_state:
+    st.session_state["show_llm"] = False
+# Botón para activar/desactivar explicaciones LLM simuladas
+if not st.session_state["show_llm"]:
+    if st.sidebar.button("🧠 Activar explicaciones LLM"):
+        st.session_state["show_llm"] = True
+else:
+    if st.sidebar.button("🧠 Desactivar explicaciones LLM"):
+        st.session_state["show_llm"] = False
+
 search = st.sidebar.text_input("Buscar proyecto")
 tag_filter = st.sidebar.multiselect("Filtrar por tag", sorted({t for p in PROJECTS for t in p["tags"]}))
+st.sidebar.caption("Tips: combina búsqueda + tags para ubicar más rápido lo que te interese.")
 
 # =========================
 # PROYECTOS
@@ -333,40 +369,48 @@ if section == "Proyectos":
     if tag_filter:
         projects_view = [p for p in projects_view if any(t in tag_filter for t in p["tags"])]
 
+    # Nota guía si no hay filtro
+    if not search and not tag_filter:
+        st.markdown("<div class='tip'>Sugerencia: prueba filtrar por <b>BI Conversacional</b> o <b>Time Series</b>.</div>", unsafe_allow_html=True)
+
     if not projects_view:
         st.info("No hay proyectos con esos filtros.")
     else:
         for p in projects_view:
-            card_l, card_r = st.columns([1.3, 2.7], gap="large")
+            card_l, card_r = st.columns([1.2, 2.8], gap="large")
             with card_l:
                 st.markdown(f"<div class='card'><div style='font-weight:900;font-size:1.1rem;'>{p['title']}</div>", unsafe_allow_html=True)
                 st.markdown(f"<div class='small' style='margin-top:4px;'>{' • '.join(p['tags'])}</div>", unsafe_allow_html=True)
                 safe_image(p.get("image",""), use_container_width=True)
                 st.markdown("</div>", unsafe_allow_html=True)
             with card_r:
-                st.markdown(f"<div class='card'><b>Descripción</b><br>{p['about']}<br><br><b>Impacto</b><br>{p['impact']}<br><br><b>Tecnologías</b><br>{', '.join(p['tech'])}<br><br><a href='{p['link']}' target='_blank'>Ver más</a></div>", unsafe_allow_html=True)
-                # Insight del “agente”
-                st.markdown("<div class='card explain'><b>🧠 Explicación del LLM</b><br>", unsafe_allow_html=True)
-                typing(f"Este proyecto prioriza entregables con métricas claras. Las integraciones y el pipeline de datos permiten decisiones rápidas con mínimo cambio de contexto. ")
-                st.markdown("</div>", unsafe_allow_html=True)
+                st.markdown(
+                    f"<div class='card'><b>Descripción</b><br>{p['about']}<br><br>"
+                    f"<b>Impacto</b><br>{p['impact']}<br><br>"
+                    f"<b>Tecnologías</b><br>{', '.join(p['tech'])}<br><br>"
+                    f"<a href='{p['link']}' target='_blank'>Ver más</a></div>",
+                    unsafe_allow_html=True
+                )
+                # Bloque de explicación LLM (solo si está activado)
+                if st.session_state["show_llm"]:
+                    st.markdown("<div class='card explain'><b>🧠 Explicación del LLM (simulada)</b><br>", unsafe_allow_html=True)
+                    typing(
+                        "Los datos y las integraciones reducen el cambio de contexto: "
+                        "las decisiones se apoyan en métricas por proyecto, y la ejecución se coordina con Jira/Slack/WhatsApp."
+                    )
+                    st.markdown("</div>", unsafe_allow_html=True)
 
         st.markdown('<hr class="section"/>', unsafe_allow_html=True)
 
-        # Pequeña analítica del portafolio (tags más usados)
-        st.subheader("📊 Analítica del Portafolio")
+        # En lugar de gráfica, dejamos un resumen textual de tags más usados (sin chart)
         tag_rows = []
         for p in projects_view:
             for t in p["tags"]:
-                tag_rows.append({"Tag": t, "Proyecto": p["title"]})
+                tag_rows.append(t)
         if tag_rows:
-            df_tags = pd.DataFrame(tag_rows)
-            tag_counts = df_tags.groupby("Tag").agg(Proyectos=("Proyecto","nunique")).reset_index()
-            chart = alt.Chart(tag_counts).mark_bar().encode(
-                x=alt.X("Tag:N", sort='-y'),
-                y=alt.Y("Proyectos:Q"),
-                tooltip=["Tag","Proyectos"]
-            ).properties(height=280)
-            st.altair_chart(chart, use_container_width=True)
+            tag_counts = pd.Series(tag_rows).value_counts()
+            top_txt = ", ".join([f"{idx} ({val})" for idx, val in tag_counts.head(5).items()])
+            st.markdown(f"<div class='card'><b>Resumen rápido:</b> tags más frecuentes → {top_txt}</div>", unsafe_allow_html=True)
 
 # =========================
 # EXPERIENCIA
@@ -377,7 +421,7 @@ elif section == "Experiencia":
         st.markdown(f"<div class='card'><b>{e['role']}</b><br><span class='small'>{e['when']}</span><ul>", unsafe_allow_html=True)
         for b in e["bullets"]:
             st.markdown(f"<li>{b}</li>", unsafe_allow_html=True)
-        st.markdown("</ul></div>", unsafe_allow_html=True)
+        st.markdown("</ul><div class='tip'>Nota: cada bullet representa un entregable clave o responsabilidad recurrente.</div></div>", unsafe_allow_html=True)
 
 # =========================
 # CERTIFICACIONES
@@ -387,7 +431,7 @@ elif section == "Certificaciones":
     st.markdown("<div class='card'>", unsafe_allow_html=True)
     for c in CERTS:
         st.markdown(f"• {c}")
-    st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("<div class='tip'>Consejo: prioriza las más relevantes a la vacante o cliente.</div></div>", unsafe_allow_html=True)
 
 # =========================
 # PUBLICACIONES
@@ -396,6 +440,7 @@ elif section == "Publicaciones":
     st.subheader("📰 Publicaciones")
     for p in PUBS:
         st.markdown(f"<div class='card'>{p}</div>", unsafe_allow_html=True)
+    st.markdown("<div class='tip'>Contexto: incluye links o PDFs cuando sea posible.</div>", unsafe_allow_html=True)
 
 # =========================
 # HABILIDADES
@@ -403,7 +448,7 @@ elif section == "Publicaciones":
 elif section == "Habilidades":
     st.subheader("🛠️ Habilidades")
     cols = st.columns(3, gap="large")
-    buckets = list(SKills:=SKILLS.items())
+    buckets = list(SKILLS.items())
     for i, col in enumerate(cols):
         if i < len(buckets):
             cat, items = buckets[i]
@@ -421,14 +466,14 @@ elif section == "Habilidades":
                 st.markdown("</div>", unsafe_allow_html=True)
 
 # =========================
-# CONTACTO
+# CONTACTO + TESTIMONIOS
 # =========================
 elif section == "Contacto":
     st.subheader("📬 Contacto")
     st.markdown(f"<div class='card'>Estoy disponible para colaboraciones, consultoría y proyectos de IA/Datos. Escríbeme a <b>{PROFILE['email']}</b> o agenda una llamada.</div>", unsafe_allow_html=True)
 
     with st.form("contacto_form"):
-        c1, c2 = st.columns(2)
+        c1, c2 = st.columns(2, gap="large")
         with c1:
             name = st.text_input("Nombre")
         with c2:
@@ -442,5 +487,8 @@ elif section == "Contacto":
                 st.error("Completa todos los campos, por favor.")
 
     st.markdown('<hr class="section"/>', unsafe_allow_html=True)
+    st.markdown("### ⭐ Testimonios")
+    t_idx = st.number_input("Ver testimonio #", min_value=1, max_value=len(TESTIMONIALS), value=1, step=1)
+    st.markdown(f"<div class='card'>{TESTIMONIALS[int(t_idx)-1]}</div>", unsafe_allow_html=True)
     st.markdown(f"[LinkedIn]({PROFILE['links']['LinkedIn']})  •  [GitHub]({PROFILE['links']['GitHub']})  •  [Web]({PROFILE['links']['Portafolio']})")
 
